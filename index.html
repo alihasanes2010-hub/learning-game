@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>رحلة العقل الباحث - لعبة تعليمية</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; text-align: center; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { color: #1e3d59; margin-bottom: 20px; }
+        
+        /* Flashcard Styles */
+        .card-container { perspective: 1000px; margin-bottom: 30px; }
+        .card { width: 100%; height: 200px; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer; transform-style: preserve-3d; transition: transform 0.6s; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+        .card.flipped { transform: rotateY(180deg); }
+        .card-front, .card-back { position: absolute; backface-visibility: hidden; font-size: 1.2rem; line-height: 1.6; }
+        .card-back { transform: rotateY(180deg); color: #17b978; font-weight: bold; }
+        
+        /* Quiz Styles */
+        .quiz-section { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: right; }
+        .question { margin-bottom: 20px; font-weight: bold; }
+        .options button { display: block; width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; background: #fafafa; border-radius: 8px; cursor: pointer; text-align: right; font-size: 1rem; transition: 0.2s; }
+        .options button:hover { background: #e8f4f8; }
+        .options button.correct { background: #d4edda; border-color: #28a745; color: #155724; }
+        .options button.wrong { background: #f8d7da; border-color: #dc3545; color: #721c24; }
+        #score-box { font-size: 1.3rem; margin-top: 20px; color: #1e3d59; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>رحلة العقل الباحث ⛵</h1>
+    <p>اضغط على البطاقة لكشف المفهوم قبل بدء الاختبار:</p>
+
+    <!-- Flashcard Module -->
+    <div class="card-container">
+        <div class="card" id="flashcard" onclick="flipCard()">
+            <div class="card-front" id="card-question">أدوات المعرفة الأربعة لدى الإنسان؟</div>
+            <div class="card-back" id="card-answer">1. الحس 2. الخيال 3. الوهم 4. العقل (وهو الحد الفاصل عن الحيوان)</div>
+        </div>
+    </div>
+
+    <!-- Quiz Module -->
+    <div class="quiz-section">
+        <h2>اختبر معلوماتك 📝</h2>
+        <div id="quiz">
+            <div class="question" id="quiz-question">جارٍ تحميل السؤال...</div>
+            <div class="options" id="quiz-options"></div>
+        </div>
+        <div id="score-box"></div>
+    </div>
+</div>
+
+<script>
+    // Flashcard Logic
+    function flipCard() {
+        document.getElementById('flashcard').classList.toggle('flipped');
+    }
+
+    // Quiz Data
+    const quizData = [
+        {
+            q: "ما هو الحد الفاصل بين الإنسان والحيوان في أدوات المعرفة؟",
+            options: ["الحس", "الخيال", "الوهم", "العقل"],
+            answer: 3
+        },
+        {
+            q: "إدراك الشاة لعداوة الذئب يعتبر مثالاً على أداة المعرفة المسماة:",
+            options: ["الحس", "الوهم", "الخيال", "العقل"],
+            answer: 1
+        },
+        {
+            q: "يقوم 'دليل النظام' على أن الكون:",
+            options: ["نشأ بالصدفة", "يخضع لنظام مترابط يحتاج قوة عالمة", "أزلي بلا علة", "متغير بلا هدف"],
+            answer: 1
+        },
+        {
+            q: "الهدف الأساسي من خلق الإنسان وفق جواب العقل هو:",
+            options: ["حاجة الخالق للإنسان", "العبث والتسلية", "كمال الإنسان وتكامله", "البقاء المادي فقط"],
+            answer: 2
+        }
+    ];
+
+    let currentQ = 0;
+    let score = 0;
+
+    function loadQuestion() {
+        if (currentQ >= quizData.length) {
+            document.getElementById('quiz').innerHTML = "<h3>كتمل الاختبار بنجاح! 🎉</h3>";
+            document.getElementById('score-box').innerText = `نتيجتك النهاية: ${score} من ${quizData.length}`;
+            return;
+        }
+
+        const data = quizData[currentQ];
+        document.getElementById('quiz-question').innerText = `${currentQ + 1}. ${data.q}`;
+        const optionsDiv = document.getElementById('quiz-options');
+        optionsDiv.innerHTML = '';
+
+        data.options.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.innerText = opt;
+            btn.onclick = () => checkAnswer(idx, data.answer, btn);
+            optionsDiv.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(selected, correct, btn) {
+        const buttons = document.querySelectorAll('.options button');
+        buttons.forEach(b => b.disabled = true);
+
+        if (selected === correct) {
+            btn.classList.add('correct');
+            score++;
+        } else {
+            btn.classList.add('wrong');
+            buttons[correct].classList.add('correct');
+        }
+
+        setTimeout(() => {
+            currentQ++;
+            loadQuestion();
+        }, 1500);
+    }
+
+    // Initial load
+    loadQuestion();
+</script>
+
+</body>
+</html>
