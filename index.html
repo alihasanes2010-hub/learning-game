@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>رحلة العقل الباحث</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: #030c07;
+            font-family: 'Amiri', 'Georgia', serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #f7e7c4;
+            overflow: hidden;
+        }
+
+        /* Responsive UI Canvas mirroring the exact image aspect ratio */
+        .game-canvas {
+            position: relative;
+            width: 100vw;
+            max-width: 1000px;
+            aspect-ratio: 16 / 9;
+            background-image: url('game-bg.jpg'); /* Save your image as game-bg.jpg in the same directory */
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        /* Clickable Lock / Watch Area */
+        .lock-trigger {
+            position: absolute;
+            top: 5.5%;
+            left: 46%;
+            width: 8%;
+            height: 20%;
+            cursor: pointer;
+            border-radius: 50%;
+            z-index: 10;
+        }
+
+        /* Question Text Overlay directly inside the main green plaque */
+        .question-box {
+            position: absolute;
+            top: 36%;
+            left: 31%;
+            width: 38%;
+            height: 18%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 5px;
+        }
+
+        .question-text {
+            color: #ffffff;
+            font-size: clamp(0.75rem, 1.4vw, 1.25rem);
+            font-weight: bold;
+            line-height: 1.4;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+        }
+
+        /* Dynamic Glowing Gem Overlays */
+        .gem-overlay {
+            position: absolute;
+            width: 2.5%;
+            height: 4.5%;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease, box-shadow 0.5s ease;
+        }
+
+        .gem-overlay.lit {
+            opacity: 1;
+            background: rgba(0, 255, 136, 0.6);
+            box-shadow: 0 0 15px #00ff88, 0 0 25px #00ff88;
+        }
+
+        /* Gem Coordinates matching the 6 prominent emerald gems in the background frame */
+        #gem-0 { top: 18%; left: 36%; }
+        #gem-1 { top: 18%; right: 36%; }
+        #gem-2 { top: 38%; left: 21%; }
+        #gem-3 { top: 38%; right: 21%; }
+        #gem-4 { top: 60%; left: 48.7%; }
+        #gem-5 { top: 40%; left: 48.7%; }
+
+        /* Answers Container aligned with the bottom 4 option plaques */
+        .options-container {
+            position: absolute;
+            bottom: 7.5%;
+            left: 5%;
+            width: 90%;
+            height: 15%;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2%;
+        }
+
+        .option-btn {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #f7e7c4;
+            font-family: inherit;
+            font-size: clamp(0.7rem, 1.1vw, 1rem);
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 0 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background: rgba(255, 229, 143, 0.15);
+        }
+
+        .option-btn.correct {
+            background: rgba(0, 255, 136, 0.35) !important;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.8);
+            color: #ffffff;
+        }
+
+        .option-btn.wrong {
+            background: rgba(255, 77, 77, 0.35) !important;
+            box-shadow: 0 0 15px rgba(255, 77, 77, 0.8);
+            color: #ffffff;
+        }
+
+        /* Lock Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.88);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 100;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background: #0a2718;
+            border: 2px solid #d4af37;
+            border-radius: 15px;
+            padding: 25px;
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.9);
+        }
+
+        .modal-title {
+            color: #ffe58f;
+            font-size: 1.25rem;
+            margin-bottom: 12px;
+        }
+
+        .modal-body {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: #e2f0e8;
+            margin-bottom: 20px;
+        }
+
+        .close-btn {
+            background: #d4af37;
+            border: none;
+            color: #05130b;
+            font-weight: bold;
+            padding: 10px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-canvas">
+    <!-- Watch / Lock Click Region -->
+    <div class="lock-trigger" onclick="openWatchModal()" title="إظهار الفكرة"></div>
+
+    <!-- Question Text -->
+    <div class="question-box">
+        <div class="question-text" id="question-text">جاري تحميل السؤال...</div>
+    </div>
+
+    <!-- Glowing Gem Overlays -->
+    <div class="gem-overlay" id="gem-0"></div>
+    <div class="gem-overlay" id="gem-1"></div>
+    <div class="gem-overlay" id="gem-2"></div>
+    <div class="gem-overlay" id="gem-3"></div>
+    <div class="gem-overlay" id="gem-4"></div>
+    <div class="gem-overlay" id="gem-5"></div>
+
+    <!-- 4 Option Buttons over Option Plaques -->
+    <div class="options-container" id="options-container"></div>
+</div>
+
+<!-- Modal Popup -->
+<div class="modal-overlay" id="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-title" id="modal-title">🔐 المفهوم الديني/الفلسفي</div>
+        <div class="modal-body" id="modal-body">جاري التحميل...</div>
+        <button class="close-btn" onclick="closeWatchModal()">فهمت ذلك</button>
+    </div>
+</div>
+
+<script>
+    const gameData = [
+        {
+            conceptTitle: "الحد الفاصل للإنسان",
+            conceptDetail: "يتميز الإنسان بأنه جسم نامٍ، حساس، متحرّك بالإرادة، ولكن الحد الفاصل الحقيقي الذي يميّزه عن بقية الحيوانات هو 'العقل'.",
+            question: "ما هو الحد الفاصل والتام بين الإنسان والحيوان؟",
+            options: ["الحس واللمس", "النمو والحركة", "العقل والمدركات الكلية", "الخيال والتصوّر"],
+            correct: 2
+        },
+        {
+            conceptTitle: "أدوات المعرفة: الوهم",
+            conceptDetail: "الوهم كأداة معرفية هو إدراك المفاهيم الجزئية؛ مثل حنّو الأم على طفلها، أو خوف الشاة وإدراكها لعداوة الذئب.",
+            question: "إدراك الشاة لعداوة الذئب يُعدّ مثالاً على أي أداة من أدوات المعرفة؟",
+            options: ["أداة الحس", "أداة الوهم", "أداة الخيال", "أداة العقل"],
+            correct: 1
+        },
+        {
+            conceptTitle: "دليل النظام (إثبات الخالق)",
+            conceptDetail: "يستحيل عقلاً تحقّق نظام متوازن ومترابط يؤدي هدفاً محدداً في هذا الكون الفسيح دون وجود قوة عالمة وقاصدة وحكيمة.",
+            question: "يقوم 'دليل النظام' على فكرة أساسية وهي أن الكون:",
+            options: ["تكوّن بالصدفة", "يخضع لنظام دقيق يستحيل تحققه بلا خالق", "وجد نفسه بنفسه", "ليس له أي هدف"],
+            correct: 1
+        },
+        {
+            conceptTitle: "الهدف من الخلق",
+            conceptDetail: "بما أن الله تعالى 'غنيّ' لا يحتاج أحداً، وهو 'حكيم' لا يفعل عبثاً؛ فإن الهدف من خلق الإنسان هو الوصول لـ 'كماله وتكامله'.",
+            question: "ما هو الهدف الأساسي من خلق الإنسان وفق الاستدلال العقلي؟",
+            options: ["حاجة الخالق سبحانه", "العبث والتسلية", "تكامل الإنسان وكماله", "البقاء المادي فقط"],
+            correct: 2
+        },
+        {
+            conceptTitle: "دليل المعجزة",
+            conceptDetail: "المعجزة أمر خارق للعادة الطبيعية يأتي به مدّعي النبوة للتحدي، ويُعجز البشر عن الإتيان بمثله إثباتاً لتواصله الإلهي.",
+            question: "أيّ مما يلي يُعدّ من الشروط الأساسية للمعجزة؟",
+            options: ["أن تكون أمراً طبيعياً", "أن تكون خارقة للأسباب الطبيعية", "أن لا تتطابق مع الدعوى", "أن تكون تجربة مخبرية"],
+            correct: 1
+        },
+        {
+            conceptTitle: "عصر التمهيد",
+            conceptDetail: "وظيفة المؤمن تتلخص في مسارين: السعي للكمال الفردي (الالتزام والتقوى)، والتكامل الاجتماعي (تهيئة البيئة والتمهيد للعدالة).",
+            question: "تتحدد وظيفة المؤمن في هذا العصر من خلال:",
+            options: ["الكمال الفردي والتكامل الاجتماعي", "الانتظار السلبي", "الاهتمام بالنفس فقط", "اعتزال الناس"],
+            correct: 0
+        }
+    ];
+
+    let currentIndex = 0;
+
+    function loadQuestion() {
+        if (currentIndex >= gameData.length) {
+            showEndGame();
+            return;
+        }
+
+        const data = gameData[currentIndex];
+        document.getElementById('question-text').innerText = data.question;
+        document.getElementById('modal-title').innerText = `💡 ${data.conceptTitle}`;
+        document.getElementById('modal-body').innerText = data.conceptDetail;
+
+        const container = document.getElementById('options-container');
+        container.innerHTML = '';
+
+        data.options.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opt;
+            btn.onclick = () => selectOption(idx, data.correct, btn);
+            container.appendChild(btn);
+        });
+    }
+
+    function selectOption(selected, correct, btn) {
+        const buttons = document.querySelectorAll('.option-btn');
+        buttons.forEach(b => b.disabled = true);
+
+        if (selected === correct) {
+            btn.classList.add('correct');
+            const gem = document.getElementById(`gem-${currentIndex}`);
+            if (gem) gem.classList.add('lit');
+        } else {
+            btn.classList.add('wrong');
+            buttons[correct].classList.add('correct');
+        }
+
+        setTimeout(() => {
+            currentIndex++;
+            loadQuestion();
+        }, 1600);
+    }
+
+    function openWatchModal() {
+        document.getElementById('modal-overlay').classList.add('active');
+    }
+
+    function closeWatchModal() {
+        document.getElementById('modal-overlay').classList.remove('active');
+    }
+
+    function showEndGame() {
+        document.querySelector('.game-canvas').innerHTML = `
+            <div style="position: absolute; top: 40%; left: 20%; width: 60%; text-align: center; background: rgba(10, 39, 24, 0.95); padding: 30px; border: 2px solid #d4af37; border-radius: 15px;">
+                <h1 style="color: #ffe58f; margin-bottom: 15px;">اكتملت الرحلة بنجاح 💎</h1>
+                <p style="color: #ffffff; margin-bottom: 20px;">لقد أضاءت جميع الجواهر الخضراء واستكملت محطات العقل الباحث.</p>
+                <button class="close-btn" onclick="location.reload()">إعادة اللعبة 🔄</button>
+            </div>
+        `;
+    }
+
+    loadQuestion();
+</script>
+
+</body>
+      </html>
+      
